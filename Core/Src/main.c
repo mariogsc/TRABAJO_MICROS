@@ -61,50 +61,60 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-#define N 100
 uint32_t valor_adc[2];
 uint32_t pot_val=0,ldr_val=0;
-uint32_t pot_val_filtro=0;
-uint32_t pot_array[N];
-int indice=0;
 uint32_t duty=0;
+int abierto=0;
 volatile uint8_t modo=0;
 volatile uint8_t dma_completo = 0;
 
-void inicializa_filtro(){
-	for(int i=0;i<N;i++){
-		pot_array[i]=0;
+
+uint32_t servo_manual(uint32_t value){
+	if(value>0 && value<500){ // cerrado
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,0);
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,1);
+		return 5;
 	}
-}
-
-uint32_t filtro(uint32_t val){
-	pot_array[indice]=val;
-	indice=(indice+1)%N;
-
-	uint32_t suma=0;
-
-    for (int i = 0; i < N; i++) {
-        suma += pot_array[i];
-    }
-
-    return suma/N;
-}
-
-uint32_t servo_1(uint32_t value){
-	if(value>0 && value<500)return 5;
-	else if(value>=3500)return 10;
+	else if(value>=3500){ // abierto
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,1);
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,0);
+		return 10;
+	}
 	else return 5;
 }
 
-uint32_t servo_2(uint32_t value){
-	if(value/800 == 0)return 5;
-	else if(value/800 == 1)return 6;
-	else if(value/800 == 2)return 7;
-	else if(value/800 == 3)return 8;
-	else if(value/800 == 4)return 9;
-	else if(value/800 == 5)return 10;
-	else return 5;
+uint32_t servo_automatico(){
+
+	int contador=0,tiempo=0;
+
+	HAL_Delay(2000);
+
+		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_6)){
+			tiempo=HAL_GetTick();
+			while(contador<4){
+				if((HAL_GetTick()-tiempo)>=25){
+					if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_6)==0){
+						break;
+					}
+					else {
+						tiempo=HAL_GetTick();
+						contador++;
+					}
+				}
+				if(contador==4){
+					__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,10);
+					HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,1);
+					HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,0);
+				}
+			}
+		}
+
+		HAL_Delay(5000);
+		__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,5); // cerrado
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,0);
+		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,1);
 }
+
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 	if(GPIO_Pin==GPIO_PIN_5){
@@ -159,7 +169,6 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
-  inicializa_filtro();
   HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
   __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,0);
 
@@ -177,15 +186,14 @@ int main(void)
 	 pot_val=valor_adc[0];
 	 ldr_val=valor_adc[1];
 
-	 pot_val_filtro=filtro(pot_val);
 	  if(modo==1){
-		  duty=servo_1(pot_val_filtro);
+			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,servo_manual(pot_val));
+
 	  }
 	  else
-		  duty=servo_2(pot_val_filtro);
+		  servo_automatico();
 
 	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,encender_led(ldr_val));
-	__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,duty);
 
 	HAL_Delay(100);
 
@@ -407,8 +415,12 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOE_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOE, GPIO_PIN_13|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12|GPIO_PIN_6, GPIO_PIN_RESET);
@@ -418,6 +430,25 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PA6 */
+  GPIO_InitStruct.Pin = GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PC4 */
+  GPIO_InitStruct.Pin = GPIO_PIN_4;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : PE13 PE15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13|GPIO_PIN_15;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PD12 PD6 */
   GPIO_InitStruct.Pin = GPIO_PIN_12|GPIO_PIN_6;
