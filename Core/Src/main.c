@@ -70,7 +70,7 @@ volatile uint8_t dma_completo = 0;
 
 
 uint32_t servo_manual(uint32_t value){
-	if(value>0 && value<500){ // cerrado
+	if(value>0 && value<3500){ // cerrado
 		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,0);
 		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,1);
 		return 5;
@@ -180,9 +180,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // NO FUNCIONA -- SE QUEDA BLOQUEADO EN LA LECTURA DEL ADC (AUNQUE LA LECTURA SI VARIA)
-	  while (dma_completo==0){};
-
 	 pot_val=valor_adc[0];
 	 ldr_val=valor_adc[1];
 
@@ -195,7 +192,7 @@ int main(void)
 
 	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,encender_led(ldr_val));
 
-	HAL_Delay(100);
+	HAL_Delay(10);
 
     /* USER CODE END WHILE */
 
