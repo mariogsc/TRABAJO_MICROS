@@ -61,6 +61,7 @@ static void MX_TIM1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
 uint32_t valor_adc[2];
 uint32_t pot_val=0,ldr_val=0;
 uint32_t duty=0;
@@ -87,7 +88,7 @@ uint32_t servo_automatico(){
 
 	int contador=0,tiempo=0;
 
-	HAL_Delay(2000);
+	//HAL_Delay(2000);  -- PROBAR SOLO
 
 		if(HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_6)){
 			tiempo=HAL_GetTick();
@@ -105,11 +106,13 @@ uint32_t servo_automatico(){
 					__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,10);
 					HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,1);
 					HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,0);
+
+					HAL_Delay(5000);  //-- MOVIDO PROBAR
 				}
 			}
 		}
 
-		HAL_Delay(5000);
+		// HAL_Delay(5000); SE MUEVE ARRIBA
 		__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,5); // cerrado
 		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,0);
 		HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,1);
