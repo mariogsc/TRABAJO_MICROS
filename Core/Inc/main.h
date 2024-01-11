@@ -59,6 +59,31 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define POTENCIOMETRO_Pin GPIO_PIN_1
+#define POTENCIOMETRO_GPIO_Port GPIOA
+#define LDR_Pin GPIO_PIN_3
+#define LDR_GPIO_Port GPIOA
+#define PULSADOR_Pin GPIO_PIN_5
+#define PULSADOR_GPIO_Port GPIOA
+#define PULSADOR_EXTI_IRQn EXTI9_5_IRQn
+#define INFRARROJO_Pin GPIO_PIN_6
+#define INFRARROJO_GPIO_Port GPIOA
+#define TRIGGER_Pin GPIO_PIN_4
+#define TRIGGER_GPIO_Port GPIOC
+#define SERVO_PWM_Pin GPIO_PIN_9
+#define SERVO_PWM_GPIO_Port GPIOE
+#define LED_VERDE_Pin GPIO_PIN_13
+#define LED_VERDE_GPIO_Port GPIOE
+#define LED_ROJO_Pin GPIO_PIN_15
+#define LED_ROJO_GPIO_Port GPIOE
+#define LED_CASA_Pin GPIO_PIN_12
+#define LED_CASA_GPIO_Port GPIOD
+#define LED_3_ULTRA_Pin GPIO_PIN_6
+#define LED_3_ULTRA_GPIO_Port GPIOD
+#define LED_2_ULTRA_Pin GPIO_PIN_6
+#define LED_2_ULTRA_GPIO_Port GPIOB
+#define LED_1_ULTRA_Pin GPIO_PIN_7
+#define LED_1_ULTRA_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
