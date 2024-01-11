@@ -64,18 +64,15 @@ static void MX_TIM3_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 
-uint32_t valor_adc[2];
-uint32_t pot_val=0,ldr_val=0;
-uint32_t duty=0;
-int abierto=0;
-volatile uint8_t modo=0;
-volatile uint8_t dma_completo = 0;
-volatile uint8_t bajar_barrera=0;
-
-uint8_t es_pv=0;
-int distancia=0;
-
-uint32_t valor1,valor2,periodo;
+uint32_t valor_adc[2];              // almacena los valores de los sensores analógicos
+uint32_t pot_val=0,ldr_val=0;       // dan nombre a los valores de los sensores analógicos
+uint32_t duty=0;                    // valor del ancho de pulso del pwm del servomotor
+volatile uint8_t modo=0;           // indica el modo de apertura de la barrera (0 - automático, 1 - manual)
+volatile uint8_t dma_completo = 0; // finalización de las lecturas dma de los sensores analógicos
+volatile uint8_t bajar_barrera=0; // se utiliza como callback para evitar el uso de DELAYS
+uint8_t es_pv=0;                 // variable para configuracón de temporizador de ultrasonido
+int distancia=0;                 // da valor a la distancia medida por el sensor de ultrasonido
+uint32_t valor1,valor2,periodo;  // variable para configuracón de temporizador de ultrasonido
 
 void HAL_TIM_IC_CaptureCallback(TIM_HandleTypeDef *htim){
 	if(htim->Channel==HAL_TIM_ACTIVE_CHANNEL_4){
@@ -114,11 +111,9 @@ uint32_t servo_manual(uint32_t value){
 	else return 8;
 }
 
-uint32_t servo_automatico(){
+void servo_automatico(){
 
 	int contador=0,tiempo=0;
-
-	//HAL_Delay(2000);  -- PROBAR SOLO
 
 		if((HAL_GPIO_ReadPin(GPIOA,GPIO_PIN_6))&&(bajar_barrera==0)){
 			tiempo=HAL_GetTick();
@@ -136,17 +131,12 @@ uint32_t servo_automatico(){
 					__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,5);
 					HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,1);
 					HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,0);
-					//HAL_Delay(5000);
 					bajar_barrera=1;
 				}
 
 			}
 		}
 		contador=0;
-
-		// __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,8); // cerrado
-		//HAL_GPIO_WritePin(GPIOE,GPIO_PIN_13,0);
-		//HAL_GPIO_WritePin(GPIOE,GPIO_PIN_15,1);
 }
 
 
@@ -160,6 +150,32 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
 int encender_led(uint32_t value){
 	if(value<3000)return 1;
 	else return 0;
+}
+
+void encender_leds_carretera(int distancia){
+	 if((distancia>=0)&&(distancia<=7)){
+		  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_SET);
+		  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_RESET);
+		  		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_RESET);
+		  }
+
+		  if((distancia>=8)&&(distancia<=15)){
+		  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
+		  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_SET);
+		  		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_RESET);
+		  }
+
+		  if((distancia>=16)&&(distancia<=24)){
+		  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
+		  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_RESET);
+		  		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_SET);
+		  }
+
+		  if(distancia>24){
+			  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
+			  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_RESET);
+			  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_RESET);
+		  }
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -220,23 +236,17 @@ int main(void)
 	 pot_val=valor_adc[0];
 	 ldr_val=valor_adc[1];
 
-	  if(modo==1){
-			__HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,servo_manual(pot_val));
-
-	  }
-	  else
-		  servo_automatico();
+	  if(modo==1) __HAL_TIM_SET_COMPARE(&htim1,TIM_CHANNEL_1,servo_manual(pot_val));
+	  else servo_automatico();
 
 	  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,encender_led(ldr_val));
 
+	  // ENVIO DE SEÑAL DEL TRIGGER
 	  HAL_GPIO_WritePin(GPIOC,GPIO_PIN_4,GPIO_PIN_SET);
-
-	HAL_Delay(10);
-
+	  HAL_Delay(10);
 	  HAL_GPIO_WritePin(GPIOC,GPIO_PIN_4,GPIO_PIN_RESET);
 
 	  HAL_TIM_IC_Start_IT(&htim3,TIM_CHANNEL_4);
-	  	  //HAL_GPIO_WritePin(GPIOD,GPIO_PIN_12,GPIO_PIN_SET);
 
 	  if((bajar_barrera==1)&&(aux==0)){
 		  tiempo_barrera=HAL_GetTick();
@@ -252,30 +262,8 @@ int main(void)
 	  }
 
 	  distancia=periodo/58;
+	  encender_leds_carretera(distancia);
 
-	  if((distancia>=0)&&(distancia<=7)){
-	  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_SET);
-	  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_RESET);
-	  		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_RESET);
-	  }
-
-	  if((distancia>=8)&&(distancia<=15)){
-	  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
-	  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_SET);
-	  		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_RESET);
-	  }
-
-	  if((distancia>=16)&&(distancia<=24)){
-	  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
-	  		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_RESET);
-	  		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_SET);
-	  }
-
-	  if(distancia>24){
-		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_7,GPIO_PIN_RESET);
-		  HAL_GPIO_WritePin(GPIOB,GPIO_PIN_6,GPIO_PIN_RESET);
-		  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_6,GPIO_PIN_RESET);
-	  }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

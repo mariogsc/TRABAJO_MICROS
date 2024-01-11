@@ -70,6 +70,8 @@ void Error_Handler(void);
 #define INFRARROJO_GPIO_Port GPIOA
 #define TRIGGER_Pin GPIO_PIN_4
 #define TRIGGER_GPIO_Port GPIOC
+#define ULTRASONIDO_Pin GPIO_PIN_1
+#define ULTRASONIDO_GPIO_Port GPIOB
 #define SERVO_PWM_Pin GPIO_PIN_9
 #define SERVO_PWM_GPIO_Port GPIOE
 #define LED_VERDE_Pin GPIO_PIN_13
