@@ -4,5 +4,6 @@ Se han añadido funcionalidades extra como el encendido automático de las luces
 Para ello el programa se debe realizar en lenguaje C e implementado en un microcontrolador STM32F411.
 
 A continuación se muestra un video con el funcionamiento del código y la implementación en una maqueta:
-https://github.com/mariogsc/TRABAJO_MICROS/assets/80718611/008351e6-4e4b-4d4e-9604-809218be4c47
+
+https://github.com/user-attachments/assets/b2f293ae-8fe9-44e8-a124-408df85404a2
 
